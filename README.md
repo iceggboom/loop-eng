@@ -1,9 +1,11 @@
-# loop-eng — 迭代闭环交付
+# loop-eng — Loop Engineering for AI Coding
 
-> 把一个模糊需求，走成一条**每一步都可验证**的闭环。
+> **Loop Engineering**：把一个模糊需求，走成一条**每一步都可验证**的闭环。
 > 先红后绿 · 独立校验 · 冻结回流
 
 把「我觉得写完了」变成「**客观闸门全绿 + 独立 verifier 找不出拒绝理由**」。
+
+`loop-eng` 是 **Loop Engineering**（循环工程）方法论在 Claude Code 上的 skill 实现——一种把 AI 编码任务从「一次性生成」升级为「可验证迭代闭环」的工程实践。
 
 ---
 
@@ -185,3 +187,11 @@ loop-eng/
 ## License
 
 MIT
+
+---
+
+## Keywords
+
+**Loop Engineering** · AI coding loop · iterative delivery loop · verifiable AI coding · red-green gate · TDD for LLM agents · agentic coding workflow · Claude Code skill · closed-loop development · maker-checker verification · spec-driven AI · AI software engineering methodology
+
+> 搜索 **Loop Engineering**、AI 编码闭环、可验证 LLM 开发、Claude Code skill、agentic coding workflow 的同学，这个 skill 就是为你做的。
