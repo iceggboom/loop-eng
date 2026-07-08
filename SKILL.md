@@ -52,7 +52,7 @@ description: 把一个需求走成可验证的迭代闭环——①框定(grilli
   - **弱闸门**：目标行为确实难以纯函数断言时（PDF 产物/图表渲染/外部 IO 时序、**前端页面渲染/框架集成配置**），分两类——
     - **自动化弱闸门**（快照/契约/脚本断言）：能真红。快照=先写「与预期不符」的可失败断言，**不能只建基线**；契约/脚本断言=先写一条会失败的断言
     - **人工验收 checklist**：人按步骤核验，**不能先红**，不得单独当闸门——必须配一条能失败的自动化断言共同守护
-  - **运行时闸门**（前端/框架集成/部署配置类切片**必须额外叠加**）：build/tsc/vue-tsc 只是编译闸门，抓不到运行时问题（依赖 ESM 形态、框架默认 baseURL、proxy/环境配置）。必须启动 dev/服务 + 真请求探针——curl 页面返回非空非错误页 HTML、API 经代理返回预期数据字段——断言可先红。**编译绿 ≠ 运行时能跑**
+  - **运行时闸门**（前端/框架集成/部署配置类切片**必须额外叠加**）：build/tsc/vue-tsc 只是编译闸门，抓不到运行时问题（依赖 ESM 形态、框架默认 baseURL、proxy/环境配置）。必须启动 dev/服务 + 真请求探针，并**沉淀为可重复跑的 e2e 脚本** `tests/e2e/<切片>.spec.ts`（playwright 推荐，模板见 `references/e2e-probe-template.md`）——三断言：非白屏（#app 非空）+ 关键文本 + API 经 proxy 返数据；断言可先红。**临时 browser-use 只算联调探针不算闸门**（不可重复跑、无断言沉淀）。**编译绿 ≠ 运行时能跑**
 - **出口**：有一条**现在会失败**的闸门（弱闸门同样必须先失败，用可失败断言而非单纯建基线/人工 checklist；前端/集成切片的运行时闸门也必须先红）；红了才进下一步——这证明闸门真的在守这个边界
 - 辅助 skill：`mattpocock-skills:tdd`、`superpowers:test-driven-development`
 
@@ -67,11 +67,13 @@ description: 把一个需求走成可验证的迭代闭环——①框定(grilli
 - **触发**：闸门转绿
 - **动作**：
   1. 跑客观 gate：全量测试、类型检查（tsc / vue-tsc）、构建（build）——必须全绿
-  2. **强制独立 verifier**：spawn 一个独立 subagent 作 checker（maker 不得兼任）。只给它 diff + 闸门 + goal，要求它「**找理由拒绝**」——逐项查：diff 是否最小、有无漏边界、闸门是否真守住了这个边界（而非碰巧通过）、有无预期外副作用；**涉及前端/框架集成/部署配置时，verifier 必须启动 dev/服务真跑相关页面/端点，确认非白屏、数据真返回**，不只静态审 diff；**对照 PRD/需求的功能·导航清单逐项核对完整性**（如一级导航是否都有入口、需求点是否都覆盖），不只切片孤立绿——切片绿 ≠ 整体可用
+  2. **强制独立 verifier**：spawn 一个独立 subagent 作 checker（maker 不得兼任）。只给它 diff + 闸门 + goal，要求它「**找理由拒绝**」——逐项查：diff 是否最小、有无漏边界、闸门是否真守住了这个边界（而非碰巧通过）、有无预期外副作用；**涉及前端/框架集成/部署配置时，verifier 必须启动 dev/服务真跑相关页面/端点，确认非白屏、数据真返回——优先跑 `tests/e2e/` 探针脚本（可重复），临时 browser-use 仅补充**，不只静态审 diff；**对照 PRD/需求的功能·导航清单逐项核对完整性**（如一级导航是否都有入口、需求点是否都覆盖），不只切片孤立绿——切片绿 ≠ 整体可用
   3. verifier 判定：approved → 进出口；rejected（必附理由）→ 触发回流（见回流引擎：闸门漏 case 回③ / 实现有问题回④ / 理解偏差回①）
-  4. 记录分两处：任务内本轮进度/决策（含 verifier 判定与理由）→loop-state，跨会话领域知识/架构决策→memory
+  4. **记录分两处**（verifier 完整输出必须落盘，不只摘要——上下文压缩会丢判定细节，回流就没了依据）：
+     - **verifier 完整判定落盘** `.claude/loop-state/verifier/<切片>.md`：逐条核对结论 + 拒绝理由（每条）+ 新发现非阻塞项；loop-state「已完成切片」只记 **路径引用 + 一句摘要**。**rejected 必落盘**（回流依据，不可只在对话）；approved 在「切片数 ≤3 且不跨会话」时可只在对话记，一旦跨会话或切片多必落盘
+     - 跨会话领域知识/架构决策 → memory
   5. 提示「本切片已是一个可独立 review 的提交单元，是否提交？」（提交时机仍遵循「用户要求才提交」）
-- **出口**：客观 gate 全绿 **+ verifier approved** + 本轮 loop-state 状态块更新（含 verifier 判定）
+- **出口**：客观 gate 全绿 **+ verifier approved** + verifier 完整判定已落盘（或按规则对话内可追溯）+ 本轮 loop-state 状态块更新（含 verifier 判定摘要 + 路径）
 - **降级规则**：环境无 subagent 机制时，做一次 role-separated verifier pass（切换视角重审 diff），但必须在 loop-state 披露「非完全独立校验」；**高-risk 切片（认证/权限/数据迁移/计费/部署设置）不得降级**——必须真独立 verifier 或转 needs-human
 - 辅助 skill：`superpowers:verification-before-completion`
 
