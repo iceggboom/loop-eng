@@ -57,6 +57,32 @@
       "prompt": "彬哥，列表页分页器点下一页没反应，我看了下是 handleClick 里 page 少加了 1，帮改一下。",
       "expected_output": "应识别这是一行明确修复，不套 loop-eng 五阶段（不框定/不建闸/不切批次），直接改+跑相关测试即可。体现「何时不用」的判断力，而非对所有需求都套闭环拖慢。",
       "files": []
+    },
+    {
+      "id": 5,
+      "name": "frontend-runtime-gate-e2e",
+      "prompt": "彬哥，我要做一个内部小工具：Vue 3 + Vite 的「员工列表页」。页面打开时请求 /api/employees 拿数据、渲染成表格（列：姓名/工号/部门），后端 API 还没开发，先用本地 mock 顶上——前端通过 vite 的 devServer.proxy 把 /api 转发到本地一个返回假 JSON 的 mock 端口（比如 http://localhost:3001）。我的诉求是能在浏览器里真把表格和假数据跑出来看，不是只要能编译通过。你用 loop-eng 的闭环路子帮我搞，闸门、切片、验证都按它的规矩落地成文件。补充：这是无人值守的自动评测，没有真人跟你来回确认细节，你基于合理默认假设往前推进，把你的假设记进 loop-state。",
+      "expected_output": "不应只 build 通过就交差。应识别这是前端集成切片（vite proxy + ESM + 运行时白屏风险），③建闸时叠加运行时闸门并沉淀为可重复跑的 tests/e2e/*.spec.ts 探针脚本（三断言：非白屏 + 关键文本 + API 返数据，可先红）；⑤验证 spawn 独立 verifier 真跑探针确认非白屏/数据返回，并把完整判定落盘到 .claude/loop-state/verifier/。产出能看出走了闭环而非一把梭。",
+      "expectations": [
+        "outputs 目录下沉淀了可重复运行的 e2e 探针脚本：存在 tests/e2e/*.spec.ts（playwright 或同类）文件，而非只临时 curl/browser-use",
+        "outputs 目录下沉淀了 verifier 完整判定：存在 .claude/loop-state/verifier/*.md，含逐条核对结论与拒绝理由",
+        "e2e 探针脚本含三类断言：非白屏(#app 非空) + 关键文本 + API 经 proxy 返数据",
+        "有证据表明运行时探针真跑过（启动 dev/服务 + 真请求），而非只 build/tsc 编译绿"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "kanban-multislice-rollback",
+      "prompt": "彬哥，做个内部「任务看板」小工具（Vue3 + Vite，纯前端，数据存 localStorage 不需要后端）。需求清单：① 任务列表按状态分三栏看板展示（todo/doing/done），每个任务有标题/状态/截止日期；② 新建任务——标题为空时禁止提交；③ 拖拽任务在三栏间移动改状态；④ 顶部有按状态筛选的下拉 + 各栏任务数统计；⑤ 状态变更持久化到 localStorage，刷新页面不丢。用 loop-eng 闭环路子搞，闸门/切片/验证落地成文件。无人值守评测，合理默认推进，假设记 loop-state。",
+      "expected_output": "应识别为多切片（看板渲染/新建校验/拖拽/筛选统计/持久化 等 4-5 片），分批实现每片独立验证；⑤验证 spawn 独立 verifier 对照需求清单①-⑤逐项核对完整性，把完整判定落盘 .claude/loop-state/verifier/（多切片必落盘）；发现遗漏（如空标题校验/localStorage 未持久化）触发 rejected→回流→修正→重跑→记录。体现多切片闭环 + 回流处理。",
+      "expectations": [
+        "识别为多切片任务并合理分片（>3 切片，各自可独立验证+提交），而非一次性大块",
+        "verifier 完整判定落盘到 .claude/loop-state/verifier/*.md（多切片场景按新规则必落盘，不只是对话记录）",
+        "verifier 对照需求清单①-⑤逐项核对完整性（不只切片孤立绿）",
+        "若 verifier 发现遗漏（如空标题校验缺失/localStorage 未持久化），有 rejected→回流→修正→重跑→记录的证据"
+      ],
+      "files": []
     }
   ]
 }
